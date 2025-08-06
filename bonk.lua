@@ -53,13 +53,11 @@ end
 
 local bonked = false
 
-playStream("https://github.com/kevinislas2/MC/raw/refs/heads/main/mountains.dfpwm")
--- playAudio("mountains.dfpwm")
--- while not bonked do
---   local i = math.random(1, 10000)
---   if i == 500 then
---     bonk()
---     bonked = true
---     -- playAudio("mountains.dfpwm")
---   end
--- end
+while not bonked do
+  local i = math.random(1, 10000)
+  if i == 500 then
+    bonk()
+    bonked = true
+    playStream("https://github.com/kevinislas2/MC/raw/refs/heads/main/mountains.dfpwm")
+  end
+end
