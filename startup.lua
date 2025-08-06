@@ -11,7 +11,7 @@ function playAudio (audio_path)
     end
 end
 
-  playAudio("cobra.dfpwm")
+playAudio("cobra.dfpwm")
   
 -- while true do
 --   -- Pause the program until a redstone event happens
