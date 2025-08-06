@@ -55,9 +55,12 @@ local bonked = false
 
 while not bonked do
   local i = math.random(1, 10000)
+  print(i)
+  sleep(1)
   if i == 500 then
     bonk()
     bonked = true
     playStream("https://github.com/kevinislas2/MC/raw/refs/heads/main/mountains.dfpwm")
   end
+
 end
