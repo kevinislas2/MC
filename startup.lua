@@ -9,6 +9,7 @@ function playAudio (audio_path)
     while not speaker.playAudio(buffer) do
       os.pullEvent("speaker_audio_empty")
     end
+  end
 end
 
 playAudio("cobra.dfpwm")
