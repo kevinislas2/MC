@@ -1,4 +1,3 @@
-local http = require("http")
 
 function bonk () 
   print("bonk")
