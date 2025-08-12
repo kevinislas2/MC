@@ -21,8 +21,7 @@ function contentContainsYes(content)
 end
 
 function main ()
-  url = "https://github.com/kevinislas2/MC/raw/refs/heads/main/test.txt"
-  print("Connecting to: " .. url)
+  url = "https://github.com/kevinislas2/MC/raw/refs/heads/main/prod.txt"
   local headers = {
     ["Cache-Control"] = "no-cache",
     ["Pragma"] = "no-cache"
