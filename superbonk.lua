@@ -22,7 +22,7 @@ function contentContainsYes(content)
 end
 
 function main ()
-  url = "https://github.com/kevinislas2/MC/raw/refs/heads/main/download.lua"
+  url = "https://github.com/kevinislas2/MC/raw/refs/heads/main/test.txt"
   print("Connecting to: " .. url)
   local response = http.get(url)
   local content = response.readAll()
