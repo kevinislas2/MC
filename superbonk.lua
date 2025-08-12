@@ -23,7 +23,11 @@ end
 function main ()
   url = "https://github.com/kevinislas2/MC/raw/refs/heads/main/test.txt"
   print("Connecting to: " .. url)
-  local response = http.get(url)
+  local headers = {
+    ["Cache-Control"] = "no-cache",
+    ["Pragma"] = "no-cache"
+  }
+  local response = http.get(url, headers)
   local content = response.readAll()
   response.close() -- Good practice to close the handle
 
