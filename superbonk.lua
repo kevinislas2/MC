@@ -13,7 +13,7 @@ function contentContainsYes(content)
   for line in content:gmatch("[^\\n]+") do
     -- Trim whitespace and check if the line is exactly "yes"
     if line:match("^%s*(.-)%s*$") == "yes" then
-      return true -- Found it!
+      return true
     end
   end
 
@@ -44,5 +44,5 @@ while true do
   else
     print("Error. Bonk")
   end
-  sleep(1)
+  sleep(60)
 end
