@@ -4,7 +4,16 @@
 -- url = "https://storage.googleapis.com/mc_joe/movie_10000f.joe"
 local movieUrl = "https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/test"
 
+local dfpwm = require("cc.audio.dfpwm")
+local speaker = peripheral.find("speaker")
+local decoder = dfpwm.make_decoder()
+local chunkSize = 16 * 1024
+local music_response_handle, err = http.get("https://github.com/kevinislas2/MC/raw/refs/heads/main/music/shrek_es.dfpwm", nil, true)
 
+if err then
+    print("Error reading audio")
+    return
+end
 
 -- Function to draw a frame (this is unchanged from the previous version)
 local function drawFrame(term, frameData, width, height)
@@ -38,7 +47,7 @@ local function drawFrame(term, frameData, width, height)
 end
 
 -- Main playback logic (updated for streaming)
-local function playMovie(url)
+local function playMovie(url, music_response_handle)
     print("Attempting to connect to URL...")
     
     -- Use http.get to open a connection to the URL
@@ -59,6 +68,7 @@ local function playMovie(url)
 
     -- Read the response line by line (each line is one frame)
     local line = handle.readLine()
+    local frame = 0
     while line do
         local decodedFrame = {}
         -- The RLE decoding logic is exactly the same
@@ -71,10 +81,20 @@ local function playMovie(url)
         end
 
         drawFrame(monitor, decodedFrame, width, height)
-        sleep(1/30) -- Adjust for your video's frame rate
+        -- sleep(1/30) -- Adjust for your video's frame rate
 
         -- Read the next line from the web request
         line = handle.readLine()
+
+        -- Play music?
+        frame = frame + 1
+        if frame % 10 == 0 then
+            music_chunk = music_response_handle.read(chunkSize)
+            if music_chunk then
+                local music_buffer = decoder(music_chunk)
+                speaker.playAudio(music_buffer)
+            end
+        end
     end
 
     -- Close the HTTP connection handle
@@ -90,7 +110,7 @@ if not http then
 end
 
 for i=1,65 do 
-    local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movies/shrek_%d.joe", i)
-    playMovie(movieUrl)
+    local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movie/shrek_%d.joe", i)
+    playMovie(movieUrl, music_response_handle)
 
 end
