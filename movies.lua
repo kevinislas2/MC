@@ -87,7 +87,7 @@ local function playMovie(url, music_response_handle)
         line = handle.readLine()
 
         -- Play music?
-        frame+=1
+        frame = frame + 1
         if frame % 10 == 0 then
             music_chunk = music_response_handle.read(chunkSize)
             if music_chunk then
