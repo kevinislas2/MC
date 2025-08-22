@@ -4,6 +4,8 @@
 -- url = "https://storage.googleapis.com/mc_joe/movie_10000f.joe"
 local movieUrl = "https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/test"
 
+
+
 -- Function to draw a frame (this is unchanged from the previous version)
 local function drawFrame(term, frameData, width, height)
     local x, y = 1, 1
@@ -87,4 +89,8 @@ if not http then
     return
 end
 
-playMovie(movieUrl)
+for i=1,65 do 
+    local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movies/shrek_%d.joe", i)
+    playMovie(movieUrl)
+
+end
