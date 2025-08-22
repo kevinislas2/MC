@@ -63,6 +63,7 @@ local function playMovie(url)
 
     -- Read the response line by line (each line is one frame)
     local line = handle.readLine()
+    local frame = 0
     while line do
         local decodedFrame = {}
         -- The RLE decoding logic is exactly the same
@@ -75,10 +76,20 @@ local function playMovie(url)
         end
 
         drawFrame(monitor, decodedFrame, width, height)
-        sleep(1/30) -- Adjust for your video's frame rate
+        -- sleep(1/30) -- Adjust for your video's frame rate
 
         -- Read the next line from the web request
         line = handle.readLine()
+
+        -- Play music?
+        frame+=1
+        if frame % 10 == 0 then
+            music_chunk = music_response_handle.read(chunkSize)
+            if music_chunk then
+                local music_buffer = decoder(music_chunk)
+                speaker.playAudio(music_buffer)
+            end
+        end
     end
 
     -- Close the HTTP connection handle
