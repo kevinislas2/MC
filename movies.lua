@@ -4,7 +4,11 @@
 -- url = "https://storage.googleapis.com/mc_joe/movie_10000f.joe"
 local movieUrl = "https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/test"
 
-
+local dfpwm = require("cc.audio.dfpwm")
+local speaker = peripheral.find("speaker")
+local decoder = dfpwm.make_decoder()
+local chunkSize = 16 * 1024
+local music_response_handle = http.get("https://github.com/kevinislas2/MC/raw/refs/heads/main/music/shrek_es.dfpwm", nil, true)
 
 -- Function to draw a frame (this is unchanged from the previous version)
 local function drawFrame(term, frameData, width, height)
