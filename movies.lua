@@ -42,7 +42,7 @@ local function drawFrame(term, frameData, width, height)
 end
 
 -- Main playback logic (updated for streaming)
-local function playMovie(url)
+local function playMovie(url, music_response_handle)
     print("Attempting to connect to URL...")
     
     -- Use http.get to open a connection to the URL
@@ -106,6 +106,6 @@ end
 
 for i=1,65 do 
     local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movie/shrek_%d.joe", i)
-    playMovie(movieUrl)
+    playMovie(movieUrl, music_response_handle)
 
 end
