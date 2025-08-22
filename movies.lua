@@ -94,7 +94,7 @@ if not http then
 end
 
 for i=1,65 do 
-    local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movies/shrek_%d.joe", i)
+    local movieUrl = string.format("https://raw.githubusercontent.com/kevinislas2/MC/refs/heads/main/movie/shrek_%d.joe", i)
     playMovie(movieUrl)
 
 end
