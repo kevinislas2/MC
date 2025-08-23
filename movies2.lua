@@ -82,34 +82,31 @@ local function drawFrame(term, frameData, width)
     end
 end
 
---- Streams and plays audio from a web handle. Runs in parallel.
+--- Streams and plays audio from a web handle using events. Runs in parallel.
 -- @param audioHandle The binary read handle for the audio stream.
 local function streamAudio(audioHandle)
     local decoder = dfpwm.make_decoder()
-    local chunk_is_playing = false
 
+    -- Prime the speaker with the first chunk of audio to start the event chain.
+    local first_chunk = audioHandle.read(audioChunkSize)
+    if not first_chunk or #first_chunk == 0 then
+        return -- No audio data to play.
+    end
+    speaker.playAudio(decoder(first_chunk))
+
+    -- Loop, waiting for the speaker to be empty before sending the next chunk.
     while true do
-        -- If the last chunk has finished playing, reset our flag.
-        if chunk_is_playing and not speaker.isPlaying() then
-            chunk_is_playing = false
-        end
+        -- This waits for the speaker to finish its queue, yielding to other parallel tasks.
+        os.pullEvent("speaker_audio_empty")
 
-        -- If we're ready for a new chunk, try to send one.
-        if not chunk_is_playing then
-            local music_chunk = audioHandle.read(audioChunkSize)
-            if music_chunk and #music_chunk > 0 then
-                local music_buffer = decoder(music_chunk)
-                if speaker.playAudio(music_buffer) then
-                    -- Successfully queued audio, set flag to wait.
-                    chunk_is_playing = true
-                end
-            else
-                -- No more music data, exit the audio loop.
-                break
-            end
+        local music_chunk = audioHandle.read(audioChunkSize)
+        if music_chunk and #music_chunk > 0 then
+            local music_buffer = decoder(music_chunk)
+            speaker.playAudio(music_buffer)
+        else
+            -- No more music data, so we exit the loop.
+            break
         end
-        -- Yield to other parallel tasks.
-        os.sleep(0)
     end
 end
 
