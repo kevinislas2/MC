@@ -1,9 +1,9 @@
 --[[
   Parallel Video and Audio Player for ComputerCraft
-  UPDATE
-  This script streams video and audio from URLs concurrently to prevent stuttering.
-  - Video is expected in RLE ".joe" format, one frame per line.
-  - Audio is expected in DFPWM format.
+
+  This script runs two independent tasks in parallel:
+  1. A video player that sequentially streams and displays all video parts.
+  2. An audio player that sequentially streams and plays all corresponding audio parts.
 ]]
 
 -- #############
@@ -66,7 +66,6 @@ local colorMap = {
 local function drawFrame(term, frameData, width)
     local x, y = 1, 1
     term.setCursorPos(1, 1)
-    -- We don't clear because the frame data covers the whole screen
     
     for i = 1, #frameData do
         local ccColor = colorMap[frameData[i]] or colors.black
@@ -82,59 +81,78 @@ local function drawFrame(term, frameData, width)
     end
 end
 
---- Streams and plays audio from a web handle using events. Runs in parallel.
--- @param audioHandle The binary read handle for the audio stream.
-local function streamAudio(audioHandle)
+--- A long-running task to stream and play all audio parts sequentially.
+local function streamAllAudio()
     local decoder = dfpwm.make_decoder()
 
-    -- Prime the speaker with the first chunk of audio to start the event chain.
-    local first_chunk = audioHandle.read(audioChunkSize)
-    if not first_chunk or #first_chunk == 0 then
-        return -- No audio data to play.
-    end
-    speaker.playAudio(decoder(first_chunk))
+    for i = 1, movieParts do
+        -- Calculate which audio file to use, cycling from 0 to (audioParts - 1)
+        local audioIndex = (i - 1) % audioParts
+        local currentAudioUrl = string.format(audioUrlFormat, audioIndex)
+        
+        local audioHandle, audioErr = http.get(currentAudioUrl, nil, true) -- true for binary mode
 
-    -- Loop, waiting for the speaker to be empty before sending the next chunk.
-    while true do
-        -- This waits for the speaker to finish its queue, yielding to other parallel tasks.
-        os.pullEvent("speaker_audio_empty")
+        if audioHandle then
+            -- Prime the speaker with the first chunk to start the event chain.
+            local first_chunk = audioHandle.read(audioChunkSize)
+            if first_chunk and #first_chunk > 0 then
+                speaker.playAudio(decoder(first_chunk))
 
-        local music_chunk = audioHandle.read(audioChunkSize)
-        if music_chunk and #music_chunk > 0 then
-            local music_buffer = decoder(music_chunk)
-            speaker.playAudio(music_buffer)
+                -- Loop until this specific audio part is finished.
+                while true do
+                    os.pullEvent("speaker_audio_empty")
+                    local music_chunk = audioHandle.read(audioChunkSize)
+                    if music_chunk and #music_chunk > 0 then
+                        speaker.playAudio(decoder(music_chunk))
+                    else
+                        -- No more music data for this part, break to the outer loop.
+                        break
+                    end
+                end
+            end
+            audioHandle.close()
         else
-            -- No more music data, so we exit the loop.
-            break
+            -- Log error but continue, so audio failure doesn't stop the whole movie.
+            printError("Audio part " .. i .. " failed: " .. (audioErr or "Unknown error"))
         end
     end
 end
 
---- Streams and displays video from a web handle. Runs in parallel.
--- @param videoHandle The read handle for the video stream.
+--- A long-running task to stream and display all video parts sequentially.
 -- @param monitor The monitor to display the video on.
-local function streamVideo(videoHandle, monitor)
+local function streamAllVideo(monitor)
     local width, height = monitor.getSize()
     local frameDelay = 1 / videoFps
 
-    -- Read the response line by line (each line is one frame)
-    local line = videoHandle.readLine()
-    while line do
-        local decodedFrame = {}
-        -- RLE decoding logic
-        for count, value in string.gmatch(line, "(%d+):(%d+);?") do
-            count = tonumber(count)
-            value = tonumber(value)
-            for i = 1, count do
-                table.insert(decodedFrame, value)
+    for i = 1, movieParts do
+        local currentVideoUrl = string.format(videoUrlFormat, i)
+        print(string.format("Loading part %d/%d...", i, movieParts))
+        
+        local videoHandle, videoErr = http.get(currentVideoUrl)
+        
+        if videoHandle then
+            -- Read the response line by line (each line is one frame)
+            local line = videoHandle.readLine()
+            while line do
+                local decodedFrame = {}
+                -- RLE decoding logic
+                for count, value in string.gmatch(line, "(%d+):(%d+);?") do
+                    count = tonumber(count)
+                    value = tonumber(value)
+                    for i = 1, count do
+                        table.insert(decodedFrame, value)
+                    end
+                end
+
+                drawFrame(monitor, decodedFrame, width)
+                sleep(frameDelay)
+
+                line = videoHandle.readLine()
             end
+            videoHandle.close()
+        else
+            printError("Video part " .. i .. " failed: " .. (videoErr or "Unknown error"))
         end
-
-        drawFrame(monitor, decodedFrame, width)
-        sleep(frameDelay)
-
-        -- Read the next line from the web request
-        line = videoHandle.readLine()
     end
 end
 
@@ -148,42 +166,15 @@ local function main()
     term.clear()
     term.setCursorPos(1,1)
     print("Starting Movie Player...")
+    sleep(1)
+    monitor.clear()
     
-    for i = 1, movieParts do
-        local currentVideoUrl = string.format(videoUrlFormat, i)
-        
-        -- Calculate which audio file to use, cycling from 0 to (audioParts - 1)
-        local audioIndex = (i - 1) % audioParts
-        local currentAudioUrl = string.format(audioUrlFormat, audioIndex)
-        
-        print(string.format("Loading part %d/%d (Audio %s)...", i, movieParts, string.format("%02d", audioIndex)))
-        
-        -- Open connections to both the video and audio URLs
-        local videoHandle, videoErr = http.get(currentVideoUrl)
-        local audioHandle, audioErr = http.get(currentAudioUrl, nil, true) -- true for binary mode
-
-        if not videoHandle or not audioHandle then
-            printError("Error loading part " .. i)
-            if videoErr then printError("Video: " .. videoErr) end
-            if audioErr then printError("Audio: " .. audioErr) end
-        else
-            print("Part " .. i .. " loaded. Starting playback.")
-            sleep(1)
-            monitor.clear()
-            
-            -- Define the two functions that will run in parallel.
-            -- We wrap them in anonymous functions to pass arguments.
-            local videoTask = function() streamVideo(videoHandle, monitor) end
-            local audioTask = function() streamAudio(audioHandle) end
-            
-            -- This runs both functions at the same time and waits for them to finish.
-            parallel.waitForAll(videoTask, audioTask)
-            
-            -- Clean up handles after the part is done
-            videoHandle.close()
-            audioHandle.close()
-        end
-    end
+    -- Define the two long-running tasks.
+    local videoTask = function() streamAllVideo(monitor) end
+    local audioTask = function() streamAllAudio() end
+    
+    -- Run both tasks completely in parallel and wait for both to finish their entire sequence.
+    parallel.waitForAll(videoTask, audioTask)
     
     print("Playback finished.")
     monitor.setTextScale(1)
