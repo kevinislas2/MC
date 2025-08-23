@@ -81,14 +81,14 @@ local function playMovie(url, music_response_handle)
         end
 
         drawFrame(monitor, decodedFrame, width, height)
-        -- sleep(1/30) -- Adjust for your video's frame rate
+        sleep(1/64) -- Adjust for your video's frame rate
 
         -- Read the next line from the web request
         line = handle.readLine()
 
         -- Play music?
         frame = frame + 1
-        if frame % 1000 then
+        if frame % 32 then
             music_chunk = music_response_handle.read(chunkSize)
             if music_chunk then
                 local music_buffer = decoder(music_chunk)
