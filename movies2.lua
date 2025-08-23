@@ -1,6 +1,6 @@
 --[[
   Parallel Video and Audio Player for ComputerCraft
-
+  UPDATE
   This script streams video and audio from URLs concurrently to prevent stuttering.
   - Video is expected in RLE ".joe" format, one frame per line.
   - Audio is expected in DFPWM format.
